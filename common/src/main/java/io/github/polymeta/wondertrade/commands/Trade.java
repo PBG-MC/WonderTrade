@@ -22,11 +22,11 @@ public class Trade {
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         var tradeCommand = dispatcher.register(
                 LiteralArgumentBuilder.<CommandSourceStack>literal("wondertrade")
-                        .requires(req -> Cobblemon.INSTANCE.getPermissionValidator().hasPermission(req,
-                                new CobblemonPermission("wondertrade.command.trade.base", PermissionLevel.NONE)))
+                        .requires(req -> Cobblemon.INSTANCE.getPermissionValidator().hasPermission(req, new CobblemonPermission("wondertrade.command.trade.base", PermissionLevel.NONE)))
                         .then(Commands.argument("slot", PartySlotArgumentType.Companion.partySlot())
                                 .then(Commands.argument("confirmation", StringArgumentType.greedyString()).executes(ExecuteWithConfirm))
                                 .executes(Execute))
+                        .requires(req -> Cobblemon.INSTANCE.getPermissionValidator().hasPermission(req, new CobblemonPermission("wondertrade.command.trade.base", PermissionLevel.NONE)))
                         .then(Commands.literal("pool")
                                       .executes(ctx -> {
                                           if(WonderTrade.regenerating.get()) {
@@ -38,6 +38,7 @@ public class Trade {
                                           return Command.SINGLE_SUCCESS;
                                       })
                         )
+                        .requires(req -> Cobblemon.INSTANCE.getPermissionValidator().hasPermission(req, new CobblemonPermission("wondertrade.command.trade.base", PermissionLevel.NONE)))
                         .executes(ctx ->  {
                             if(WonderTrade.regenerating.get()) {
                                 ctx.getSource().sendSystemMessage(Component.literal("The WonderTrade pool is being regenerated!"));
