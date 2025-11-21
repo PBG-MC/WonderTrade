@@ -16,7 +16,7 @@ A wondertrade sidemod written for cobblemon
 [[dependencies.wondertrade]]
 modId = "neoforge"
 mandatory = true
-versionRange = "[21.1.66,)"
+versionRange = "[21.1.182,)"
 ordering = "NONE"
 side = "BOTH"
 
@@ -37,6 +37,6 @@ side = "BOTH"
 [[dependencies.wondertrade]]
 modId = "cobblemon"
 mandatory = true
-versionRange = "[1.6.0,)"
+versionRange = "[1.7.0,)"
 ordering = "AFTER"
 side = "BOTH"

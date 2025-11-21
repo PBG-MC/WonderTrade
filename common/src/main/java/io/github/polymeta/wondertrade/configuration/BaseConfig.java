@@ -91,7 +91,7 @@ public class BaseConfig {
 
             return TextUtil.styledText(miniMessage, this.wonderTradeFeedback, registryAccess,
                     Placeholder.unparsed("level", String.valueOf(pokemon.getLevel())),
-                    Placeholder.unparsed("pokemon", pokemon.getDisplayName().getString()),
+                    Placeholder.unparsed("pokemon", pokemon.getDisplayName(false).getString()),
                     Placeholder.unparsed("species", pokemon.getSpecies().getName()));
         }
 
@@ -109,7 +109,7 @@ public class BaseConfig {
                 return Component.empty();
             }
             return TextUtil.styledText(stringMessage, registryAccess,
-                    Placeholder.unparsed("pokemon", pokemon.getDisplayName().getString()),
+                    Placeholder.unparsed("pokemon", pokemon.getDisplayName(false).getString()),
                     Placeholder.unparsed("species", pokemon.getSpecies().getName()));
         }
 
