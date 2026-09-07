@@ -5,7 +5,7 @@ plugins {
 
 
 architectury {
-    common("neoforge", "fabric")
+    common("fabric")
 }
 
 loom {

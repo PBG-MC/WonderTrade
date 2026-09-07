@@ -76,6 +76,8 @@ public class BaseConfig {
                 " <aqua>lvl <level> <pokemon> (<species>)</aqua>?<wtconfirm><yellow> Click here to confirm!</wtconfirm>";
         public String cooldownFeedback = "<gray>[<white>Wonder<red>Trade<gray>] <red>You are on cooldown!";
         public String pokemonNotAllowed = "<gray>[<white>Wonder<red>Trade<gray>] <red>You cannot trade this pokemon!";
+        public String poolEmpty = "<gray>[<white>Wonder<red>Trade<gray>] <red>The pool is empty right now - refilling it, try again shortly!";
+        public String tradeFailed = "<gray>[<white>Wonder<red>Trade<gray>] <red>That trade could not be completed. Nothing was lost - please try again.";
         public String successFeedback = "<gray>[<white>Wonder<red>Trade<gray>] <green>Successfully traded!";
         public String broadcastPokemonAdded = "<gray>[<white>Wonder<red>Trade<gray>]<white> <pokemon> (<species>) got added to the wondertrade pool!";
         public String broadcastShinyPokemonAdded = "<gray>[<white>Wonder<red>Trade<gray>]<yellow> Shiny <pokemon> (<species>) got added to the wondertrade pool!";
@@ -115,6 +117,14 @@ public class BaseConfig {
 
         public Component pokemonNotAllowed(RegistryAccess registryAccess) {
             return TextUtil.styledText(this.pokemonNotAllowed, registryAccess);
+        }
+
+        public Component poolEmpty(RegistryAccess registryAccess) {
+            return TextUtil.styledText(this.poolEmpty, registryAccess);
+        }
+
+        public Component tradeFailed(RegistryAccess registryAccess) {
+            return TextUtil.styledText(this.tradeFailed, registryAccess);
         }
     }
 }

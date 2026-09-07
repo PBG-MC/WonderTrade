@@ -12,7 +12,7 @@ import net.minecraft.network.chat.Component;
 
 public class Reload {
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
-        var regenCommand = dispatcher.register(
+        dispatcher.register(
                 LiteralArgumentBuilder.<CommandSourceStack>literal("reloadwondertrade")
                         .requires(req -> Cobblemon.INSTANCE.getPermissionValidator().hasPermission(req,
                                 new CobblemonPermission("wondertrade.command.reload", PermissionLevel.ALL_COMMANDS)))
@@ -22,6 +22,8 @@ public class Reload {
                             return Command.SINGLE_SUCCESS;
                         })
         );
-        dispatcher.register(LiteralArgumentBuilder.<CommandSourceStack>literal("regeneratepool").redirect(regenCommand));
+        // Upstream also registered "regeneratepool" here as a redirect to *this* command, which
+        // (registering after RegeneratePool) silently replaced the real /regeneratepool with a
+        // config reload. Removed - RegeneratePool owns that literal.
     }
 }

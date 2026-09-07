@@ -3,13 +3,16 @@
   "id": "wondertrade",
   "version": "${version}",
   "name": "WonderTrade",
-  "description": "A wondertrade sidemod written for cobblemon",
+  "description": "A wondertrade sidemod written for cobblemon. PBG fork: Cobblemon 1.8 target plus empty-pool, regeneration and concurrency fixes.",
   "authors": [
     "Polymeta"
   ],
+  "contributors": [
+    "PBG-MC"
+  ],
   "contact": {
     "homepage": "https://github.com/Polymeta",
-    "sources": "https://github.com/Polymeta/WonderTrade"
+    "sources": "https://github.com/PBG-MC/WonderTrade"
   },
   "license": "MIT License",
   "icon": "assets/wondertrade/icon.png",
@@ -22,7 +25,7 @@
   "depends": {
     "fabric": "*",
     "minecraft": "1.21.1",
-    "cobblemon": ">=1.7.0",
-	"architectury": ">=13.0.6"
+    "cobblemon": ">=1.8.0",
+	"architectury": ">=13.0.8"
   }
 }

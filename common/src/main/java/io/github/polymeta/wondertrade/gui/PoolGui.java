@@ -27,7 +27,10 @@ public class PoolGui implements MenuProvider
     private final ServerPlayer serverPlayer;
     private int pageNumber;
     private final int pageSize = 45;
-    private final int totalPages = (int) Math.ceil((double) WonderTrade.pool.pokemon.size() / pageSize);
+    // Snapshot once per GUI so paging stays stable and never trips over a concurrent trade
+    // or regeneration mutating the live list mid-stream.
+    private final java.util.List<String> poolView = WonderTrade.poolSnapshot();
+    private final int totalPages = (int) Math.ceil((double) poolView.size() / pageSize);
 
     public PoolGui(ServerPlayer serverPlayer, int pageNumber)
     {
@@ -45,7 +48,7 @@ public class PoolGui implements MenuProvider
         {
             this.container.getItems().set(i, redBorder);
         }
-        var pageContent = WonderTrade.pool.pokemon.stream()
+        var pageContent = this.poolView.stream()
                                   .skip((long) this.pageNumber * this.pageSize)
                                   .limit(this.pageSize)
                                   .map(PokemonProperties.Companion::parse)

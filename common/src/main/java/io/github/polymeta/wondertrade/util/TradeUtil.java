@@ -9,15 +9,16 @@ import com.cobblemon.mod.common.pokemon.Pokemon;
 import io.github.polymeta.wondertrade.WonderTrade;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
-import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.TimeUnit;
 
 public class TradeUtil
 {
-    private static final Random rng = new Random();
+    private static final Logger logger = LogManager.getLogger();
     private static final ConcurrentSkipListSet<UUID> playersOnCooldown = new ConcurrentSkipListSet<>();
 
     public static boolean isPlayerOnCooldown(UUID playerId, boolean canBypass)
@@ -38,10 +39,8 @@ public class TradeUtil
             player.sendSystemMessage(WonderTrade.config.messages.pokemonNotAllowed(player.registryAccess()));
             return;
         }
-        var playerParty = Cobblemon.INSTANCE.getStorage().getParty(player);
-        var wonderPoke = WonderTrade.pool.pokemon.remove(rng.nextInt(WonderTrade.pool.pokemon.size()));
-        var tookPoke = playerParty.remove(slot);
-        var pokeAdded = playerParty.add(PokemonProperties.Companion.parse(wonderPoke).create());
+
+        // Clamp before snapshotting, so what we bank in the pool is what we advertise.
         if(WonderTrade.config.adjustNewPokemonToLevelRange) {
             var level = slot.getLevel();
             if(level > WonderTrade.config.poolMaxLevel) {
@@ -51,8 +50,43 @@ public class TradeUtil
                 slot.setLevel(WonderTrade.config.poolMinLevel);
             }
         }
-        WonderTrade.pool.pokemon.add(slot.createPokemonProperties(PokemonPropertyExtractor.ALL).asString(" "));
+        var deposit = slot.createPokemonProperties(PokemonPropertyExtractor.ALL).asString(" ");
+
+        // Draw and deposit as one atomic step so two players trading in the same tick
+        // can never draw the same entry, and so an empty pool is reported rather than
+        // thrown (upstream called rng.nextInt(0) here -> "bound must be positive").
+        var wonderPoke = WonderTrade.drawAndDeposit(deposit);
+        if(wonderPoke == null) {
+            player.sendSystemMessage(WonderTrade.config.messages.poolEmpty(player.registryAccess()));
+            logger.warn("A player tried to WonderTrade but the pool is empty; triggering a regeneration.");
+            WonderTrade.regeneratePool(WonderTrade.config.poolSize);
+            return;
+        }
+
+        // Build the reward before touching the player's party. A malformed pool entry
+        // must not cost them the Pokemon they put in.
+        Pokemon received;
+        try {
+            received = PokemonProperties.Companion.parse(wonderPoke).create();
+        } catch (Exception e) {
+            logger.error("Discarding unparseable WonderTrade pool entry '" + wonderPoke + "'; the trade was rolled back.", e);
+            WonderTrade.rollbackDeposit(deposit);
+            player.sendSystemMessage(WonderTrade.config.messages.tradeFailed(player.registryAccess()));
+            return;
+        }
+
+        var playerParty = Cobblemon.INSTANCE.getStorage().getParty(player);
+        playerParty.remove(slot);
+        if(!playerParty.add(received)) {
+            // Party had no room for the reward: undo everything rather than void it.
+            logger.error("Could not add the traded Pokemon to {}'s party; rolling the trade back.", player.getGameProfile().getName());
+            playerParty.add(slot);
+            WonderTrade.restoreDrawn(wonderPoke, deposit);
+            player.sendSystemMessage(WonderTrade.config.messages.tradeFailed(player.registryAccess()));
+            return;
+        }
         WonderTrade.savePool();
+
         if(WonderTrade.config.cooldownEnabled && !canBypass) {
             playersOnCooldown.add(player.getUUID());
             WonderTrade.scheduler.schedule(() -> {playersOnCooldown.remove(player.getUUID());},
