@@ -8,6 +8,7 @@ import dev.architectury.event.events.common.CommandRegistrationEvent;
 import dev.architectury.event.events.common.LifecycleEvent;
 import io.github.polymeta.wondertrade.commands.RegeneratePool;
 import io.github.polymeta.wondertrade.commands.Reload;
+import io.github.polymeta.wondertrade.commands.ReloadPool;
 import io.github.polymeta.wondertrade.commands.Trade;
 import io.github.polymeta.wondertrade.configuration.BaseConfig;
 import io.github.polymeta.wondertrade.configuration.Pool;
@@ -63,6 +64,7 @@ public class WonderTrade {
             RegeneratePool.register(dispatcher);
             Trade.register(dispatcher);
             Reload.register(dispatcher);
+            ReloadPool.register(dispatcher);
         });
         LifecycleEvent.SERVER_STARTED.register((instance) -> {
             if(WonderTrade.pool.pokemon.isEmpty()) {
@@ -171,6 +173,53 @@ public class WonderTrade {
             pool.pokemon.remove(deposit);
             pool.pokemon.add(drawn);
         }
+    }
+
+    /**
+     * Re-reads config/wondertrade/pool.json into the live pool, so a hand-curated pool can be
+     * deployed without restarting the server. The live pool is left untouched on failure.
+     *
+     * @return the number of Pokemon now in the pool, or -1 if the file could not be read.
+     */
+    public static int reloadPoolFromDisk() {
+        var poolFile = new File("config/wondertrade/pool.json");
+        if(!poolFile.exists()) {
+            logger.error("Cannot reload the pool: config/wondertrade/pool.json does not exist.");
+            return -1;
+        }
+        Pool loaded;
+        try (var fileReader = new FileReader(poolFile)) {
+            loaded = BaseConfig.GSON.fromJson(fileReader, Pool.class);
+        } catch (Exception e) {
+            logger.error("Cannot reload the pool: config/wondertrade/pool.json failed to parse. " +
+                         "The live pool was left untouched.", e);
+            return -1;
+        }
+        if(loaded == null || loaded.pokemon == null) {
+            logger.error("Cannot reload the pool: config/wondertrade/pool.json is empty or malformed. " +
+                         "The live pool was left untouched.");
+            return -1;
+        }
+        // Validate every entry before swapping, so one typo can't poison the live pool and
+        // strand players on an unparseable draw.
+        for (String entry : loaded.pokemon) {
+            try {
+                PokemonProperties.Companion.parse(entry).create();
+            } catch (Exception e) {
+                logger.error("Cannot reload the pool: entry '" + entry + "' is not a valid Pokemon. " +
+                             "The live pool was left untouched.", e);
+                return -1;
+            }
+        }
+        int size;
+        synchronized (poolLock) {
+            pool.pokemon.clear();
+            pool.pokemon.addAll(loaded.pokemon);
+            size = pool.pokemon.size();
+        }
+        savePool();
+        logger.info("Reloaded the WonderTrade pool from disk: {} Pokemon.", size);
+        return size;
     }
 
     /** A snapshot of the pool, safe to iterate off the lock (used by the pool GUI). */

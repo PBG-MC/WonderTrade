@@ -86,6 +86,14 @@ misconfiguration into a hard, unrecoverable outage. Those are what this fork fix
 - `PoolGui` takes a snapshot once per GUI, so paging is stable and cannot trip over a
   concurrent trade.
 
+### New: `/reloadpool`
+- Re-reads `config/wondertrade/pool.json` into the live pool. Upstream loaded the pool
+  exactly once, in `init()`, while writing it back after **every trade** — so a
+  hand-curated pool could not be deployed without a full server restart: the file was
+  ignored until boot, and the next trade overwrote it. Every entry is parsed and
+  validated before the swap, and the live pool is left untouched on any failure.
+- Permission `wondertrade.command.reloadpool` (`ALL_COMMANDS`).
+
 ### `Reload`
 - Removed the `regeneratepool` redirect. `Reload` registered that literal *after*
   `RegeneratePool` did, silently replacing the real regenerate command with a config
