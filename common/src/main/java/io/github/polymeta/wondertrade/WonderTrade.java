@@ -18,7 +18,12 @@ import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 import java.io.FileReader;
-import java.io.FileWriter;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.AtomicMoveNotSupportedException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -42,6 +47,9 @@ public class WonderTrade {
     public static AtomicBoolean regenerating = new AtomicBoolean(false);
     public static ScheduledThreadPoolExecutor scheduler;
     public static ForkJoinPool worker;
+
+    /** Directory holding main.json and pool.json. Not final so tests can point it at a temp dir. */
+    static File configDir = new File("config/wondertrade");
 
     private static final Random rng = new Random();
     private static final Logger logger = LogManager.getLogger();
@@ -182,7 +190,7 @@ public class WonderTrade {
      * @return the number of Pokemon now in the pool, or -1 if the file could not be read.
      */
     public static int reloadPoolFromDisk() {
-        var poolFile = new File("config/wondertrade/pool.json");
+        var poolFile = new File(configDir, "pool.json");
         if(!poolFile.exists()) {
             logger.error("Cannot reload the pool: config/wondertrade/pool.json does not exist.");
             return -1;
@@ -230,7 +238,7 @@ public class WonderTrade {
     }
 
     public static void loadConfig() {
-        var configFile = new File("config/wondertrade/main.json");
+        var configFile = new File(configDir, "main.json");
         configFile.getParentFile().mkdirs();
 
         // Check config existence and load if it exists, otherwise create default.
@@ -248,6 +256,11 @@ public class WonderTrade {
         } else {
             config = new BaseConfig();
         }
+        // Gson returns null (not an exception) for an empty or whitespace-only file.
+        if(config == null) {
+            logger.warn("config/wondertrade/main.json was empty; using the default config.");
+            config = new BaseConfig();
+        }
         if(config.poolSize <= 0) {
             var fallback = new BaseConfig().poolSize;
             logger.warn("poolSize must be at least 1 (config said {}); falling back to {}. A poolSize of 0 leaves the " +
@@ -263,23 +276,31 @@ public class WonderTrade {
         saveConfig();
     }
 
-    private static void loadPool() {
-        var configFile = new File("config/wondertrade/pool.json");
+    static void loadPool() {
+        var configFile = new File(configDir, "pool.json");
         configFile.getParentFile().mkdirs();
 
         // Check config existence and load if it exists, otherwise create default.
         if (configFile.exists()) {
             try {
-                var fileReader = new FileReader(configFile);
-                pool = BaseConfig.GSON.fromJson(fileReader, Pool.class);
-                fileReader.close();
+                try (var fileReader = new FileReader(configFile)) {
+                    pool = BaseConfig.GSON.fromJson(fileReader, Pool.class);
+                }
                 if(pool == null || pool.pokemon == null) {
                     logger.warn("config/wondertrade/pool.json was empty or malformed; starting from an empty pool.");
                     pool = new Pool();
                 }
             } catch (Exception e) {
-                logger.error("Failed to load pre-existing wondertrade pool! Removing broken file...");
+                // Keep the unparseable file: it may be a curated pool worth recovering by hand,
+                // and savePool() below would otherwise overwrite it with an empty one.
+                var broken = new File(configDir, "pool.json.broken-" + System.currentTimeMillis());
+                logger.error("Failed to load pre-existing wondertrade pool! Moving it aside to " + broken.getName());
                 e.printStackTrace();
+                try {
+                    Files.move(configFile.toPath(), broken.toPath());
+                } catch (IOException moveFailure) {
+                    logger.error("Could not move the broken pool.json aside", moveFailure);
+                }
                 pool = new Pool();
             }
 
@@ -290,13 +311,9 @@ public class WonderTrade {
         savePool();
     }
 
-    private static void saveConfig() {
+    static void saveConfig() {
         try {
-            var configFile = new File("config/wondertrade/main.json");
-            var fileWriter = new FileWriter(configFile);
-            BaseConfig.GSON.toJson(config, fileWriter);
-            fileWriter.flush();
-            fileWriter.close();
+            writeAtomically(new File(configDir, "main.json").toPath(), BaseConfig.GSON.toJson(config));
         } catch (Exception e) {
             logger.error("Failed to save the config!");
             e.printStackTrace();
@@ -305,16 +322,25 @@ public class WonderTrade {
 
     public static void savePool() {
         try {
-            var configFile = new File("config/wondertrade/pool.json");
-            var fileWriter = new FileWriter(configFile);
+            String json;
             synchronized (poolLock) {
-                BaseConfig.GSON.toJson(pool, fileWriter);
+                json = BaseConfig.GSON.toJson(pool);
             }
-            fileWriter.flush();
-            fileWriter.close();
+            writeAtomically(new File(configDir, "pool.json").toPath(), json);
         } catch (Exception e) {
             logger.error("Failed to save the wondertrade pool!");
             e.printStackTrace();
+        }
+    }
+
+    /** Writes a sibling temp file then renames it over the target, so a crash mid-write can't leave a truncated file. */
+    static void writeAtomically(Path target, String content) throws IOException {
+        var tmp = target.resolveSibling(target.getFileName() + ".tmp");
+        Files.writeString(tmp, content, StandardCharsets.UTF_8);
+        try {
+            Files.move(tmp, target, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+        } catch (AtomicMoveNotSupportedException e) {
+            Files.move(tmp, target, StandardCopyOption.REPLACE_EXISTING);
         }
     }
 

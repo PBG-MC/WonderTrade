@@ -25,3 +25,12 @@ dependencies {
     modApi("dev.architectury:architectury:${property("architectury_version")}") { isTransitive = false }
     modImplementation("com.cobblemon:mod:${property("cobblemon_version")}") { isTransitive = false }
 }
+
+dependencies {
+    testImplementation("org.junit.jupiter:junit-jupiter:5.11.4")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher:1.11.4")
+}
+
+tasks.withType<Test> {
+    useJUnitPlatform()
+}

@@ -36,7 +36,7 @@ misconfiguration into a hard, unrecoverable outage. Those are what this fork fix
   `13.0.8`, matching the jars on the PBG servers.
 - **NeoForge subproject removed.** PBG is Fabric-only; this matches the convention in
   `PBG-Raid-Dens` and `PBG-Safari-Dimension`.
-- Version scheme `1.6.1+cobblemon1.8`, matching the other in-house jars.
+- Version scheme `1.6.2+cobblemon1.8`, matching the other in-house jars.
 - `fabric.mod.json` now requires `cobblemon >=1.8.0`.
 
 ### `TradeUtil.doWonderTrade`
@@ -79,6 +79,17 @@ misconfiguration into a hard, unrecoverable outage. Those are what this fork fix
 ### `WonderTrade.loadConfig` / `loadPool`
 - `poolSize <= 0` falls back to the default with a warning naming the consequence.
 - A `pool.json` that parses to `null` no longer NPEs later.
+- Config and pool writes are **atomic** (`pool.json.tmp` / `main.json.tmp` then
+  `Files.move(ATOMIC_MOVE, REPLACE_EXISTING)`); upstream truncate-then-wrote, so a crash
+  mid-write left a corrupt file.
+- An **unparseable `pool.json` is renamed** to `pool.json.broken-<epoch-millis>` rather than
+  overwritten with a fresh random pool, so a curated pool can be recovered by hand. The
+  reader is now closed before the rename (required on Windows).
+- An **empty / whitespace-only `main.json`** (Gson returns `null`) falls back to a default
+  `BaseConfig` instead of NPE-ing out of `init()`; `/reloadwondertrade` shares this path.
+- First unit tests (`common/src/test`, JUnit 5, no Minecraft bootstrap) cover the above plus
+  `drawAndDeposit` / `rollbackDeposit` / `restoreDrawn`. `WonderTrade.configDir` is
+  package-private so tests can point at a temp dir. Version bumped to `1.6.2+cobblemon1.8`.
 
 ### Concurrency
 - All pool access goes through `poolLock`. Upstream shared a bare `ArrayList` between
