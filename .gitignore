@@ -22,3 +22,4 @@ build/
 .gradle/
 run/
 *.log
+common/logs/
