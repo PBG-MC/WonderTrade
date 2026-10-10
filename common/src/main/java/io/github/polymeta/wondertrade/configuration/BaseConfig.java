@@ -34,6 +34,12 @@ public class BaseConfig {
 
     public static class GuiConfig {
         public boolean generateBorders = true;
+        // Defaults reproduce the stock look: red top row, black middle row, white third row.
+        public String borderItem = "minecraft:red_stained_glass_pane";
+        public String accentBorderItem = "minecraft:black_stained_glass_pane";
+        public String fillerItem = "minecraft:white_stained_glass_pane";
+        // When true, no border/filler/footer panes are placed so a textured title background shows through.
+        public boolean hideFillers = false;
         public String mainWindowTitle = "<white>Wonder<red>Trade";
         public String confirmationWindowTitle = "<red>Confirm Trade";
         public String poolWindowTitle = "<white>Wonder<red>Trade <white>Pool";
@@ -45,6 +51,8 @@ public class BaseConfig {
         //pool gui
         public ButtonConfig prevPageButton = new ButtonConfig(45, "cobblemon:poke_ball", "<white>Previous Page");
         public ButtonConfig nextPageButton = new ButtonConfig(53, "cobblemon:poke_ball", "<white>Next Page");
+        public String poolFooterItem = "minecraft:red_stained_glass_pane";
+        public String poolFooterName = "";
 
         public Component mainWindowTitle(RegistryAccess registryAccess) {
             return TextUtil.styledText(this.mainWindowTitle, registryAccess);
