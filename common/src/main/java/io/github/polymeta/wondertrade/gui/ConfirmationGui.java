@@ -35,7 +35,7 @@ public class ConfirmationGui implements MenuProvider
 
     private void setupContainer()
     {
-        GuiUtil.checkAndPlaceBorders(this.container);
+        GuiUtil.checkAndPlaceBorders(this.container, this.serverPlayer.registryAccess());
         GuiUtil.placeButton(WonderTrade.config.gui.denyButton, this.container, this.serverPlayer.registryAccess());
         GuiUtil.placeButton(WonderTrade.config.gui.confirmationButton, this.container, this.serverPlayer.registryAccess());
         container.setItem(13, PokemonItem.from(this.pokemon));

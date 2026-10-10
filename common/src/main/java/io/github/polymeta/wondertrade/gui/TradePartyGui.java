@@ -39,7 +39,7 @@ public class TradePartyGui implements MenuProvider
 
     private void setupContainer()
     {
-        GuiUtil.checkAndPlaceBorders(this.container);
+        GuiUtil.checkAndPlaceBorders(this.container, this.serverPlayer.registryAccess());
         GuiUtil.placeButton(WonderTrade.config.gui.cancelButton, this.container, this.serverPlayer.registryAccess());
 
         var emptyBlock = new ItemStack(CobblemonItems.POKE_BALL);

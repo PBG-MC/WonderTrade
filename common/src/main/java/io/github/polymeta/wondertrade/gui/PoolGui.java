@@ -4,7 +4,6 @@ import com.cobblemon.mod.common.api.pokemon.PokemonProperties;
 import com.cobblemon.mod.common.item.PokemonItem;
 import io.github.polymeta.wondertrade.WonderTrade;
 import io.github.polymeta.wondertrade.util.GuiUtil;
-import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 
@@ -17,7 +16,6 @@ import net.minecraft.world.inventory.ChestMenu;
 import net.minecraft.world.inventory.ClickType;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -42,11 +40,15 @@ public class PoolGui implements MenuProvider
     private void setupContainer()
     {
         this.container.getItems().clear();
-        var redBorder = new ItemStack(Items.RED_STAINED_GLASS_PANE);
-        redBorder.set(DataComponents.CUSTOM_NAME, Component.empty());
-        for(int i = 45; i < 54; i++)
+        var gui = WonderTrade.config.gui;
+        if(!gui.hideFillers)
         {
-            this.container.getItems().set(i, redBorder);
+            var footer = GuiUtil.decoration(gui.poolFooterItem, "minecraft:red_stained_glass_pane",
+                    gui.poolFooterName, this.serverPlayer.registryAccess());
+            for(int i = 45; i < 54; i++)
+            {
+                this.container.getItems().set(i, footer);
+            }
         }
         var pageContent = this.poolView.stream()
                                   .skip((long) this.pageNumber * this.pageSize)

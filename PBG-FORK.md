@@ -114,6 +114,19 @@ misconfiguration into a hard, unrecoverable outage. Those are what this fork fix
 - Two new messages, `poolEmpty` and `tradeFailed`. Existing configs pick up the
   defaults on load and get them written back.
 
+### GUI styling (`feat/design-gui-titles`)
+- The hardcoded red/black/white border rows and the red pool footer are now config
+  (`gui.*` in `main.json`), so a textured title background can show through. All keys
+  are optional; defaults reproduce the stock look and existing configs keep loading.
+  - `borderItem` (row 0, default `minecraft:red_stained_glass_pane`)
+  - `accentBorderItem` (row 1, default `minecraft:black_stained_glass_pane`)
+  - `fillerItem` (row 2, default `minecraft:white_stained_glass_pane`)
+  - `hideFillers` (default `false`) — places no border/filler/footer panes at all
+  - `poolFooterItem` (default `minecraft:red_stained_glass_pane`), `poolFooterName`
+    (MiniMessage, default empty)
+  - Unknown item ids fall back to the default pane. `GuiUtil.checkAndPlaceBorders`
+    now takes a `RegistryAccess`.
+
 ## Building
 
 ```
