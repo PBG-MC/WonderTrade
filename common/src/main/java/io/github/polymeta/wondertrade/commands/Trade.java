@@ -74,8 +74,7 @@ public class Trade {
             player.sendSystemMessage(WonderTrade.config.messages.cooldownFeedback(player.registryAccess()));
             return Command.SINGLE_SUCCESS;
         }
-        if(TradeUtil.isPokemonForbidden(slot) && !canBypass) {
-            player.sendSystemMessage(WonderTrade.config.messages.pokemonNotAllowed(player.registryAccess()));
+        if(TradeUtil.refuseIfForbidden(player, slot, canBypass)) {
             return Command.SINGLE_SUCCESS;
         }
         player.sendSystemMessage(WonderTrade.config.messages.wonderTradeFeedback(slot, slotNo, player.registryAccess()));

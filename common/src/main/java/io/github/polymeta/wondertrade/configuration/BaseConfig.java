@@ -84,6 +84,7 @@ public class BaseConfig {
                 " <aqua>lvl <level> <pokemon> (<species>)</aqua>?<wtconfirm><yellow> Click here to confirm!</wtconfirm>";
         public String cooldownFeedback = "<gray>[<white>Wonder<red>Trade<gray>] <red>You are on cooldown!";
         public String pokemonNotAllowed = "<gray>[<white>Wonder<red>Trade<gray>] <red>You cannot trade this pokemon!";
+        public String pokemonUntradeable = "<gray>[<white>Wonder<red>Trade<gray>] <red>This pokemon is locked and cannot be traded.";
         public String poolEmpty = "<gray>[<white>Wonder<red>Trade<gray>] <red>The pool is empty right now - refilling it, try again shortly!";
         public String tradeFailed = "<gray>[<white>Wonder<red>Trade<gray>] <red>That trade could not be completed. Nothing was lost - please try again.";
         public String successFeedback = "<gray>[<white>Wonder<red>Trade<gray>] <green>Successfully traded!";
@@ -125,6 +126,10 @@ public class BaseConfig {
 
         public Component pokemonNotAllowed(RegistryAccess registryAccess) {
             return TextUtil.styledText(this.pokemonNotAllowed, registryAccess);
+        }
+
+        public Component pokemonUntradeable(RegistryAccess registryAccess) {
+            return TextUtil.styledText(this.pokemonUntradeable, registryAccess);
         }
 
         public Component poolEmpty(RegistryAccess registryAccess) {

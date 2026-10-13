@@ -35,8 +35,7 @@ public class TradeUtil
             player.sendSystemMessage(WonderTrade.config.messages.cooldownFeedback(player.registryAccess()));
             return;
         }
-        if(isPokemonForbidden(slot) && !canBypass) {
-            player.sendSystemMessage(WonderTrade.config.messages.pokemonNotAllowed(player.registryAccess()));
+        if(refuseIfForbidden(player, slot, canBypass)) {
             return;
         }
 
@@ -50,7 +49,9 @@ public class TradeUtil
                 slot.setLevel(WonderTrade.config.poolMinLevel);
             }
         }
-        var deposit = slot.createPokemonProperties(PokemonPropertyExtractor.ALL).asString(" ");
+        // ALL has no extractor for tradeable, so write it explicitly or the pooled copy becomes tradeable.
+        var deposit = TradeRules.withTradeable(slot.createPokemonProperties(PokemonPropertyExtractor.ALL).asString(" "),
+                                               slot.getTradeable());
 
         // Draw and deposit as one atomic step so two players trading in the same tick
         // can never draw the same entry, and so an empty pool is reported rather than
@@ -71,6 +72,16 @@ public class TradeUtil
         } catch (Exception e) {
             logger.error("Discarding unparseable WonderTrade pool entry '" + wonderPoke + "'; the trade was rolled back.", e);
             WonderTrade.rollbackDeposit(deposit);
+            player.sendSystemMessage(WonderTrade.config.messages.tradeFailed(player.registryAccess()));
+            return;
+        }
+
+        // Re-check on withdrawal too: a hand-curated pool.json (or /reloadpool) can carry an untradeable
+        // entry, and the deposit-side check never sees those. Put the drawn entry back rather than hand it out.
+        if(!received.getTradeable()) {
+            logger.error("WonderTrade pool entry '{}' is untradeable and must not be handed out; " +
+                         "remove it from config/wondertrade/pool.json. The trade was rolled back.", wonderPoke);
+            WonderTrade.restoreDrawn(wonderPoke, deposit);
             player.sendSystemMessage(WonderTrade.config.messages.tradeFailed(player.registryAccess()));
             return;
         }
@@ -100,7 +111,25 @@ public class TradeUtil
         }
     }
 
-    public static boolean isPokemonForbidden(Pokemon pokemon) {
+    /**
+     * Checks whether a Pokemon may be deposited, sending the player the refusal message if not.
+     * Untradeable Pokemon are refused even when {@code canBypass} is true.
+     *
+     * @return true if the deposit was refused and the caller should stop
+     */
+    public static boolean refuseIfForbidden(ServerPlayer player, Pokemon pokemon, boolean canBypass) {
+        var check = TradeRules.checkDeposit(pokemon.getTradeable(), isBlacklisted(pokemon), canBypass);
+        if(check == TradeRules.DepositCheck.ALLOWED) {
+            return false;
+        }
+        var message = check == TradeRules.DepositCheck.UNTRADEABLE
+                ? WonderTrade.config.messages.pokemonUntradeable(player.registryAccess())
+                : WonderTrade.config.messages.pokemonNotAllowed(player.registryAccess());
+        player.sendSystemMessage(message);
+        return true;
+    }
+
+    public static boolean isBlacklisted(Pokemon pokemon) {
         for (String property : WonderTrade.config.blacklist) {
             if(PokemonProperties.Companion.parse(property).matches(pokemon)) {
                 return true;
