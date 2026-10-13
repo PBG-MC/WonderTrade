@@ -36,8 +36,25 @@ misconfiguration into a hard, unrecoverable outage. Those are what this fork fix
   `13.0.8`, matching the jars on the PBG servers.
 - **NeoForge subproject removed.** PBG is Fabric-only; this matches the convention in
   `PBG-Raid-Dens` and `PBG-Safari-Dimension`.
-- Version scheme `1.6.2+cobblemon1.8`, matching the other in-house jars.
-- `fabric.mod.json` now requires `cobblemon >=1.8.0`.
+- Version scheme `1.6.3+cobblemon1.8`, matching the other in-house jars.
+- Compiles against Cobblemon `1.8.2+1.21.1`. `fabric.mod.json` declares the range
+  `cobblemon >=1.8.1 <1.9.0`, never an exact pin.
+
+### `tradeable=false` is honoured (1.6.3)
+- **Untradeable Pokemon cannot be deposited, bypass or not.** `TradeRules.checkDeposit`
+  refuses `tradeable=false` before the blacklist is consulted. The
+  `wondertrade.command.trade.bypass` permission still lifts the config blacklist, but never
+  this lock. The refusal uses `messages.pokemonUntradeable` on both `/wondertrade` and the
+  confirm step.
+- **The pool keeps the flag.** Cobblemon's `PokemonPropertyExtractor.ALL` has no extractor for
+  `tradeable`, so the deposit string gets an explicit `tradeable=yes|no` appended
+  (`TradeRules.withTradeable`). Before this, a deposited locked Pokemon re-entered the pool as
+  tradeable and anyone could draw it.
+- **Withdrawal re-checks it too.** A hand-curated `pool.json` (or `/reloadpool`) can hold an
+  untradeable entry that never passed the deposit check. Such an entry is put back in the pool and
+  the trade fails with `messages.tradeFailed`. The error log names the entry so an admin can
+  remove it.
+- Unit tests: `common/src/test/java/io/github/polymeta/wondertrade/TradeRulesTest.java`.
 
 ### `TradeUtil.doWonderTrade`
 - **Empty pool no longer throws.** Upstream ran
